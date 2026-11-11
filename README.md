@@ -1,3 +1,55 @@
+# GRDB with SQLCipher (Halsa fork)
+
+This is a fork of [groue/GRDB.swift](https://github.com/groue/GRDB.swift) that builds
+against [SQLCipher](https://www.zetetic.net/sqlcipher/) (encrypted SQLite) through Swift
+Package Manager. GRDB itself supports SQLCipher only through CocoaPods, and CocoaPods'
+central registry stops accepting new versions on 2 December 2026.
+
+**This is not an official GRDB release and GRDB's author does not support it. Do not
+report problems with this fork to upstream.**
+
+## What differs from upstream
+
+Branch `sqlcipher-spm` is upstream GRDB at a release tag plus one commit. The commit:
+
+- makes `Package.swift` depend on
+  [SQLCipher.swift](https://github.com/sqlcipher/SQLCipher.swift) (Zetetic's official
+  Swift package, a prebuilt binary, pinned to an exact version) and compile GRDB with
+  `GRDBCIPHER`;
+- turns the `GRDBSQLite` target into a small Objective-C target built on SQLCipher's
+  header. SQLCipher's header declares `sqlite3_key` and `sqlite3_rekey` only when
+  `SQLITE_HAS_CODEC` is defined, and defining it for Swift needs an unsafe compiler flag,
+  which Swift Package Manager rejects in a dependency requested by version number. So those
+  two functions are declared in that target's header instead;
+- adds `import GRDBSQLite` after each `import SQLCipher`.
+
+Nothing else is changed. `git diff <upstream tag>..<tag of this fork>` shows all of it.
+
+## Using it
+
+```swift
+.package(
+    url: "https://github.com/halsa-ai/grdb-sqlcipher.git",
+    revision: "<full commit hash of a tag below>")
+```
+
+then depend on the `GRDB` product. Tags are named `<upstream version>-sqlcipher.<n>`, for
+example `7.9.0-sqlcipher.1`, and each is upstream's release plus the commit above. Pin a
+commit, not the branch: the branch moves when the commit is rebased onto a newer upstream
+release, and we keep old tags so that older pins stay reachable.
+
+## Upgrading
+
+Fetch the new upstream tag, rebase the `sqlcipher-spm` commit onto it, run the tests of
+whatever uses the fork, tag the result, and push the branch and tag. Do not delete old tags.
+
+## The rest of this file is upstream's README, unchanged
+
+It describes GRDB itself. Where it says that encryption needs CocoaPods, or tells you to
+add `groue/GRDB.swift` as the dependency, use the instructions above instead.
+
+---
+
 <picture>
     <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/groue/GRDB.swift/master/GRDB~dark.png">
     <source media="(prefers-color-scheme: light)" srcset="https://raw.githubusercontent.com/groue/GRDB.swift/master/GRDB.png">
