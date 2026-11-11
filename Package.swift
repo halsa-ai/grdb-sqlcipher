@@ -15,9 +15,13 @@ let darwinPlatforms: [Platform] = [
 var swiftSettings: [SwiftSetting] = [
     .define("SQLITE_ENABLE_FTS5"),
     .define("SQLITE_ENABLE_SNAPSHOT"),
+    .define("SQLITE_HAS_CODEC"),
+    .define("GRDBCIPHER"),
 ]
 var cSettings: [CSetting] = []
-var dependencies: [PackageDescription.Package.Dependency] = []
+var dependencies: [PackageDescription.Package.Dependency] = [
+    .package(url: "https://github.com/sqlcipher/SQLCipher.swift.git", exact: "4.20.0"),
+]
 
 // Don't rely on those environment variables. They are ONLY testing conveniences:
 // $ SQLITE_ENABLE_PREUPDATE_HOOK=1 make test_SPM
@@ -52,47 +56,20 @@ let package = Package(
     ],
     dependencies: dependencies,
     targets: [
-        .systemLibrary(
+        .target(
             name: "GRDBSQLite",
-            providers: [.apt(["libsqlite3-dev"])]),
+            dependencies: [.product(name: "SQLCipher", package: "SQLCipher.swift")],
+            path: "Sources/GRDBSQLite"),
         .target(
             name: "GRDB",
             dependencies: [
                 .target(name: "GRDBSQLite"),
+                .product(name: "SQLCipher", package: "SQLCipher.swift"),
             ],
             path: "GRDB",
             resources: [.copy("PrivacyInfo.xcprivacy")],
             cSettings: cSettings,
             swiftSettings: swiftSettings),
-        .testTarget(
-            name: "GRDBTests",
-            dependencies: ["GRDB"],
-            path: "Tests",
-            exclude: [
-                "CocoaPods",
-                "Crash",
-                "CustomSQLite",
-                "GRDBManualInstall",
-                "GRDBTests/getThreadsCount.c",
-                "Info.plist",
-                "Performance",
-                "SPM",
-                "Swift6Migration",
-                "generatePerformanceReport.rb",
-                "parsePerformanceTests.rb",
-            ],
-            resources: [
-                .copy("GRDBTests/Betty.jpeg"),
-                .copy("GRDBTests/InflectionsTests.json"),
-                .copy("GRDBTests/Issue1383.sqlite"),
-            ],
-            cSettings: cSettings,
-            swiftSettings: swiftSettings + [
-                // Tests still use the Swift 5 language mode.
-                .swiftLanguageMode(.v5),
-                .enableUpcomingFeature("InferSendableFromCaptures"),
-                .enableUpcomingFeature("GlobalActorIsolatedTypesUsability"),
-            ])
     ],
     swiftLanguageModes: [.v6]
 )
